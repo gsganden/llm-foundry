@@ -1,0 +1,1 @@
+FROM mosaicml/llm-foundry:2.6.0_cu124-latest
