@@ -15,6 +15,7 @@ RUN apt-get update \
 ADD . /llm-foundry
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv --python 3.11.4 \
+    && source .venv/bin/activate \
     && uv pip install -e .
 
 ENV PATH="/llm-foundry/.venv/bin:$PATH"
