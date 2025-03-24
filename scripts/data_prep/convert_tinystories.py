@@ -22,7 +22,6 @@ def convert_tinystories_to_mds(
         concat_tokens: Number of tokens to concatenate
         compression: Compression type for MDS files
     """
-    # Initialize tokenizer
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     tokenizer.model_max_length = int(1e30)  # Suppress warnings about sequence length
 
