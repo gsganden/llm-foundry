@@ -58,8 +58,8 @@ def convert_tinystories_to_mds(
 
         # Process each story
         for item in tqdm(data, desc=f"Converting stories for {split} split"):
-            # Combine story fields into a single text
-            text = f"Story: {item['story']}\nInstruction: {item['instruction']}\nSummary: {item['summary']}\nSource: {item['source']}"
+            # Only use the story text
+            text = item['story']
 
             # Add BOS/EOS text if specified
             if bos_text:
