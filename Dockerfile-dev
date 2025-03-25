@@ -18,4 +18,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     && source .venv/bin/activate \
     && uv pip install -e .
 
+# Create directory for Hugging Face token and declare it as a volume
+RUN mkdir -p /root/.cache/huggingface
+VOLUME /root/.cache/huggingface
+
 ENV PATH="/llm-foundry/.venv/bin:$PATH"

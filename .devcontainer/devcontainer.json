@@ -20,5 +20,8 @@
     },
     "runArgs": [
         "--gpus=all"
+    ],
+    "mounts": [
+        "source=/home/paperspace/.cache/huggingface,target=/root/.cache/huggingface,type=bind,consistency=cached"
     ]
 }
