@@ -1,5 +1,5 @@
 variables:
-  data_local: ./my-copy-c4
+  data_local: ../data_prep/tinystories-mds-mini
   data_remote:  # If blank, files must be present in data_local
   max_seq_len: 2048
   global_seed: 17
@@ -14,14 +14,28 @@ run_name: ${variables.run_name}
 model:
   name: mpt_causal_lm
   init_device: meta
-  d_model: 768
-  n_heads: 12
-  n_layers: 12
+  d_model: 512
+  n_heads: 8
+  n_layers: 8
   expansion_ratio: 4
   max_seq_len: ${variables.max_seq_len}
   vocab_size: 50368
   attn_config:
     attn_impl: flash
+    alibi: true
+    alibi_bias_max: 8
+    attn_pdrop: 0.0
+    clip_qkv: null
+  init_config:
+    name: kaiming_normal_
+    fan_mode: fan_in
+    init_nonlinearity: relu
+    init_div_is_residual: true
+    emb_init_std: 0.02
+    emb_init_uniform_lim: null
+    init_std: 0.02
+    init_gain: 1.0
+  norm_type: low_precision_layernorm
 
 # Tokenizer
 tokenizer:
@@ -41,6 +55,8 @@ train_loader:
     shuffle_seed: ${variables.global_seed}
   drop_last: true
   num_workers: 8
+  persistent_workers: true
+  pin_memory: true
 
 eval_loader:
   name: text
@@ -54,10 +70,20 @@ eval_loader:
   drop_last: false
   num_workers: 8
 
+# Training
+max_duration: 1000000000tok  # 1B tokens
+eval_interval: 100000000tok  # Eval every 100M tokens
+eval_first: false
+eval_subset_num_batches: -1
+
+global_train_batch_size: 110
+device_train_microbatch_size: 11
+device_eval_batch_size: 11
+
 # Optimization
 scheduler:
   name: cosine_with_warmup
-  t_warmup: 100ba
+  t_warmup: 200000tok
   alpha_f: 0.1
 
 optimizer:
@@ -66,7 +92,7 @@ optimizer:
   betas:
   - 0.9
   - 0.95
-  eps: 1.0e-08
+  eps: 1.0e-8
   weight_decay: 0.0
 
 algorithms:
@@ -74,27 +100,20 @@ algorithms:
     clipping_type: norm
     clipping_threshold: 1.0
 
-max_duration: 4800ba  # ~ 2.5B tokens
-eval_interval: 500ba
-eval_first: false
-eval_subset_num_batches: -1
-global_train_batch_size: 4
-
 # System
 seed: ${variables.global_seed}
-device_eval_batch_size: 2
-device_train_microbatch_size: 2
-# device_train_microbatch_size: auto
 precision: amp_bf16
 
 # FSDP
 fsdp_config:
   sharding_strategy: FULL_SHARD
   mixed_precision: PURE
-  activation_checkpointing: false
-  activation_checkpointing_reentrant: false
+  activation_checkpointing: true
+  activation_checkpointing_reentrant: true
   activation_cpu_offload: false
   limit_all_gathers: true
+  forward_prefetch: true
+  backward_prefetch: true
 
 # Logging
 progress_bar: false
@@ -104,19 +123,12 @@ console_log_interval: 1ba
 callbacks:
   speed_monitor:
     window_size: 10
-  lr_monitor: {}
   memory_monitor: {}
+  lr_monitor: {}
   runtime_estimator: {}
 
-# loggers:
-#   wandb: {}
-
-# Checkpoint to local filesystem or remote object store
-# save_interval: 500ba
-# save_num_checkpoints_to_keep: 1  # Important, this cleans up checkpoints saved to DISK
-# save_folder: ./{run_name}/checkpoints
-# save_folder: s3://my-bucket/my-folder/{run_name}/checkpoints
-
-# Load from local filesystem or remote object store
-# load_path: ./gpt-125m/checkpoints/latest-rank{rank}.pt
-# load_path: s3://my-bucket/my-folder/gpt-125m/checkpoints/latest-rank{rank}.pt
+# Rough parameter count:
+# Embeddings: 50257 × 512 ≈ 25.7M
+# Each layer: 512 × 512 × 4 (MLP) + 512 × 512 × 3 (attn) ≈ 3.7M
+# 8 layers × 3.7M = 29.6M
+# Total: ~55.3M parameters
