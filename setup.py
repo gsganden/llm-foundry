@@ -74,6 +74,7 @@ install_requires = [
     'catalogue>=2,<3',
     'typer<1',
     'GitPython==3.1.43',
+    "jupyter",
 ]
 
 extra_deps = {}
