@@ -5,7 +5,7 @@ variables:
   global_seed: 17
 
   # Run Name
-  run_name:  # If left blank, will be read from env var $RUN_NAME
+  run_name: hackathon-pretrain-mpt-60m-tinystories-mini
 
 max_seq_len: ${variables.max_seq_len}
 run_name: ${variables.run_name}
@@ -119,6 +119,23 @@ fsdp_config:
 progress_bar: false
 log_to_console: true
 console_log_interval: 1ba
+
+loggers:
+  wandb:
+    project: pretraining-hackathon
+    init_kwargs:
+      config: ${variables}
+
+# Checkpointing
+save_interval: 100000tok
+save_num_checkpoints_to_keep: 10  # Keep only the last 2 checkpoints
+save_folder: ./{run_name}/checkpoints
+save_weights_only: false  # Save full checkpoint including optimizer state
+
+# Load from checkpoint (uncomment and set path to resume training)
+# load_path: ./hackathon-pretrain-mpt-60m-tinystories-mini/checkpoints/latest-rank{rank}.pt
+# load_weights_only: false  # Set to true to only load model weights, not optimizer state
+# load_strict_model_weights: true  # Set to false to allow loading partial weights
 
 callbacks:
   speed_monitor:
