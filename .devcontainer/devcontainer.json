@@ -23,5 +23,6 @@
     ],
     "mounts": [
         "source=/home/paperspace/.cache/huggingface,target=/root/.cache/huggingface,type=bind,consistency=cached"
-    ]
+    ],
+    "postCreateCommand": "bash .devcontainer/post-create.sh"
 }
