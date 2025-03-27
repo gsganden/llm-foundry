@@ -12,11 +12,20 @@ RUN apt-get update \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-ADD . /llm-foundry
+# Copy only the files needed for dependency installation
+COPY requirements.txt .
+
+# Install dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv venv --python 3.11.4 \
     && source .venv/bin/activate \
-    && uv pip install -e .
+    && uv pip install -r requirements.txt
+
+# Now copy the rest of the application code
+COPY . .
+
+# Install llmfoundry in editable mode
+RUN source .venv/bin/activate && uv pip install -e .
 
 # Create directory for Hugging Face token and declare it as a volume
 RUN mkdir -p /root/.cache/huggingface
