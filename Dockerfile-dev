@@ -1,5 +1,5 @@
 FROM mosaicml/llm-foundry:2.6.0_cu124-latest
-COPY --from=ghcr.io/astral-sh/uv:0.6.5 /uv /uvx /bin/
+# COPY --from=ghcr.io/astral-sh/uv:0.6.5 /uv /uvx /bin/
 
 LABEL maintainer="Greg Gandenberger <gsganden@gmail.com>"
 LABEL description="Development environment for LLM-Foundry"
@@ -14,12 +14,12 @@ RUN apt-get update \
 
 ADD . /llm-foundry
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv venv --python 3.11.4 \
-    && source .venv/bin/activate \
-    && uv pip install -e .
+    # uv venv --python 3.11.4 \
+    # && source .venv/bin/activate \
+    # && uv pip install -e .
+    pip install -e .
 
-# Create directory for Hugging Face token and declare it as a volume
 RUN mkdir -p /root/.cache/huggingface
 VOLUME /root/.cache/huggingface
 
-ENV PATH="/llm-foundry/.venv/bin:$PATH"
+# ENV PATH="/workspaces/llm-foundry/.venv/bin:$PATH"
