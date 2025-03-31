@@ -19,10 +19,13 @@
         }
     },
     "runArgs": [
-        "--gpus=all"
+        "--gpus=all",
+        "--ipc=host"
     ],
     "mounts": [
-        "source=/home/paperspace/.cache/huggingface,target=/root/.cache/huggingface,type=bind,consistency=cached"
+        "source=/home/paperspace/.cache/huggingface,target=/root/.cache/huggingface,type=bind,consistency=cached",
+        "source=${localWorkspaceFolder},target=/llm-foundry,type=bind,consistency=cached"
     ],
-    "postCreateCommand": "bash .devcontainer/post-create.sh"
+    // "postCreateCommand": "ulimit -s 67108864 && pip install -e ."
+    "postCreateCommand": "pip install -e ."
 }
