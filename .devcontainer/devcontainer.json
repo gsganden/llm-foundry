@@ -20,12 +20,13 @@
     },
     "runArgs": [
         "--gpus=all",
-        "--ipc=host"
+        "--ipc=host",
+        "--ulimit", "stack=67108864:67108864",
+        "--ulimit", "nofile=65535:65535",
     ],
     "mounts": [
         "source=/home/paperspace/.cache/huggingface,target=/root/.cache/huggingface,type=bind,consistency=cached",
         "source=${localWorkspaceFolder},target=/llm-foundry,type=bind,consistency=cached"
     ],
-    // "postCreateCommand": "ulimit -s 67108864 && pip install -e ."
     "postCreateCommand": "pip install -e ."
 }
