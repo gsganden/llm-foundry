@@ -1,0 +1,137 @@
+variables:
+  data_local: ../data_prep/data/tinystories-mds-mpt
+  data_remote:  # If blank, files must be present in data_local
+  max_seq_len: 2048
+  global_seed: 17
+
+max_seq_len: ${variables.max_seq_len}
+run_name:  # If left blank, will be read from env var $RUN_NAME
+
+# Model
+model:
+  name: mpt_causal_lm
+  init_device: meta
+  d_model: 512
+  n_heads: 8
+  n_layers: 8
+  expansion_ratio: 4
+  max_seq_len: ${variables.max_seq_len}
+  vocab_size: 50368
+  attn_config:
+    attn_impl: flash
+    alibi: true
+    alibi_bias_max: 8
+    attn_pdrop: 0.1
+    clip_qkv: null
+  init_config:
+    name: kaiming_normal_
+    fan_mode: fan_in
+    init_nonlinearity: relu
+    init_div_is_residual: true
+    emb_init_std: 0.02
+    emb_init_uniform_lim: null
+    init_std: 0.02
+    init_gain: 1.0
+  norm_type: low_precision_layernorm
+
+# Tokenizer
+tokenizer:
+  name: EleutherAI/gpt-neox-20b
+  kwargs:
+    model_max_length: ${variables.max_seq_len}
+
+# Dataloaders
+train_loader:
+  name: text
+  dataset:
+    local: ${variables.data_local}
+    remote: ${variables.data_remote}
+    split: train
+    shuffle: true
+    max_seq_len: ${variables.max_seq_len}
+    shuffle_seed: ${variables.global_seed}
+  drop_last: true
+  num_workers: 16
+  persistent_workers: true
+  pin_memory: true
+
+eval_loader:
+  name: text
+  dataset:
+    local: ${variables.data_local}
+    remote: ${variables.data_remote}
+    split: val
+    shuffle: false
+    max_seq_len: ${variables.max_seq_len}
+    shuffle_seed: ${variables.global_seed}
+  drop_last: true
+  num_workers: 16
+
+# Training
+max_duration:  2000000000tok
+eval_interval: 20000000tok
+eval_first: true
+eval_subset_num_batches: -1
+
+global_train_batch_size: 220
+device_train_microbatch_size: 11
+device_eval_batch_size: 11
+
+# Optimization
+scheduler:
+  name: cosine_with_warmup
+  t_warmup: 200000tok
+  alpha_f: 0.1
+
+optimizer:
+  name: decoupled_adamw
+  lr: 6.0e-4
+  betas:
+  - 0.9
+  - 0.95
+  eps: 1.0e-8
+  weight_decay: 1e-4
+
+algorithms:
+  gradient_clipping:
+    clipping_type: norm
+    clipping_threshold: 1.0
+
+# System
+seed: ${variables.global_seed}
+precision: amp_bf16
+
+# Logging
+progress_bar: false
+log_to_console: true
+console_log_interval: 1ba
+
+loggers:
+  wandb:
+    project: pretraining-hackathon
+    init_kwargs:
+      config: ${variables}
+
+# Checkpointing
+save_interval: 20000000tok
+save_num_checkpoints_to_keep: 5
+save_folder: ./checkpoints/hackathon-pretrain-mpt-60m-tinystories/{run_name}
+save_weights_only: false  # Save full checkpoint including optimizer state
+
+# Load from checkpoint (uncomment and set path to resume training)
+load_path: ./checkpoints/hackathon-pretrain-mpt-60m-tinystories/1743441691-fluffy-bug/ep0-ba356-rank0.pt
+load_weights_only: false  # Set to true to only load model weights, not optimizer state
+load_strict_model_weights: true  # Set to false to allow loading partial weights
+
+callbacks:
+  speed_monitor:
+    window_size: 10
+  memory_monitor: {}
+  lr_monitor: {}
+  runtime_estimator: {}
+
+# Rough parameter count:
+# Embeddings: 50257 × 512 ≈ 25.7M
+# Each layer: 512 × 512 × 4 (MLP) + 512 × 512 × 3 (attn) ≈ 3.7M
+# 8 layers × 3.7M = 29.6M
+# Total: ~55.3M parameters
